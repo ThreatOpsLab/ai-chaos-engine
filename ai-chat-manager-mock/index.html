@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Chat Manager — Mock</title>
+    <meta name="description" content="Mock UI for an AI Chat Manager with multi-agent routing and searchable history." />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%2300A3FF'/%3E%3Ctext x='50' y='59' text-anchor='middle' font-size='54' fill='white' font-family='sans-serif'%3EA%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="app" class="app">
+      <!-- Sidebar: Brand, actions, agents, conversations -->
+      <aside class="sidebar" aria-label="Sidebar">
+        <div class="brand">
+          <div class="logo">🤖</div>
+          <div class="title">
+            <strong>AI Chat Manager</strong>
+            <span class="subtitle">Mock</span>
+          </div>
+        </div>
+
+        <div class="sidebar-actions">
+          <button id="newChatBtn" class="btn primary" title="Start a new chat">+ New Chat</button>
+          <button id="connectAgentBtn" class="btn" title="Connect a new agent">➕ Connect Agent</button>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="section-header">
+            <span>Agents</span>
+            <button id="toggleAgents" class="icon-btn" aria-label="Toggle agents">▾</button>
+          </div>
+          <ul id="agentList" class="list agents"></ul>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="section-header with-search">
+            <span>History</span>
+            <input id="historySearch" class="input small" type="search" placeholder="Search history" aria-label="Search history" />
+          </div>
+          <ul id="conversationList" class="list conversations"></ul>
+        </div>
+      </aside>
+
+      <!-- Main: header, thread, composer -->
+      <main class="main">
+        <header class="chat-header">
+          <div class="chat-meta">
+            <h1 id="chatTitle" class="chat-title">Welcome</h1>
+            <div id="chatParticipants" class="participants"></div>
+          </div>
+          <div class="chat-tools">
+            <input id="chatSearch" class="input" type="search" placeholder="Search in chat" aria-label="Search in chat" />
+            <button id="summarizeBtn" class="btn ghost" title="Summarize chat">Summarize</button>
+            <button id="exportBtn" class="btn ghost" title="Export chat">Export</button>
+            <button id="deleteBtn" class="btn danger ghost" title="Delete chat">Delete</button>
+            <button id="themeToggle" class="icon-btn" title="Toggle theme" aria-label="Toggle theme">🌗</button>
+          </div>
+        </header>
+
+        <section id="thread" class="thread" aria-live="polite"></section>
+
+        <footer class="composer">
+          <div class="composer-row">
+            <div class="chip-select">
+              <label for="routeAgent">Route</label>
+              <select id="routeAgent" class="select"></select>
+            </div>
+            <div class="chip-select">
+              <label for="temperature">Creativity</label>
+              <input id="temperature" class="range" type="range" min="0" max="1" step="0.1" value="0.6" />
+            </div>
+            <div class="grow"></div>
+            <button id="commandPaletteBtn" class="btn ghost" title="Command palette (Ctrl/Cmd K)">⌘K</button>
+          </div>
+          <div class="composer-row">
+            <textarea id="composerInput" class="textarea" rows="2" placeholder="Type a message… Use / for commands"></textarea>
+            <div class="composer-actions">
+              <button id="attachBtn" class="icon-btn" title="Attach">📎</button>
+              <button id="sendBtn" class="btn primary" title="Send">Send ➤</button>
+            </div>
+          </div>
+        </footer>
+      </main>
+
+      <!-- Inspector / Right panel -->
+      <aside class="inspector">
+        <div class="inspector-section">
+          <div class="section-header">
+            <span>Router</span>
+            <button id="routerCollapseBtn" class="icon-btn">▾</button>
+          </div>
+          <div class="router-body">
+            <div class="kv"><span class="k">Strategy</span><span id="routerStrategy" class="v">Round-robin</span></div>
+            <div class="kv"><span class="k">Context Window</span><span id="routerContext" class="v">16k</span></div>
+            <div class="kv"><span class="k">Tools</span><span id="routerTools" class="v">Search, Files, Calendar</span></div>
+          </div>
+        </div>
+        <div class="inspector-section">
+          <div class="section-header">
+            <span>Conversation</span>
+            <button id="convCollapseBtn" class="icon-btn">▾</button>
+          </div>
+          <div class="conv-body">
+            <div class="pill-row" id="conversationTags"></div>
+            <div class="kv"><span class="k">Created</span><span id="convCreated" class="v">—</span></div>
+            <div class="kv"><span class="k">Tokens</span><span id="convTokens" class="v">—</span></div>
+          </div>
+        </div>
+        <div class="inspector-section">
+          <div class="section-header">
+            <span>Knowledge</span>
+            <button id="knCollapseBtn" class="icon-btn">▾</button>
+          </div>
+          <div class="kn-body">
+            <ul class="list small">
+              <li>Project Docs</li>
+              <li>Design Specs</li>
+              <li>Support KB</li>
+            </ul>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Modals -->
+      <div id="modalBackdrop" class="backdrop hidden" aria-hidden="true"></div>
+      <dialog id="connectAgentModal" class="modal">
+        <form method="dialog" class="modal-content" id="connectAgentForm">
+          <header class="modal-header">
+            <h2>Connect Agent</h2>
+            <button type="button" class="icon-btn" id="closeConnectModal">✕</button>
+          </header>
+          <div class="modal-body">
+            <label class="field">
+              <span>Name</span>
+              <input id="agentNameInput" class="input" type="text" placeholder="e.g., Researcher" required />
+            </label>
+            <label class="field">
+              <span>Model</span>
+              <select id="agentModelInput" class="select" required>
+                <option>gpt-4o-mini</option>
+                <option>gpt-4.1</option>
+                <option>claude-3.7-sonnet</option>
+                <option>local-llama3-8b</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Capabilities</span>
+              <div class="checkbox-row">
+                <label><input type="checkbox" value="search" checked /> Search</label>
+                <label><input type="checkbox" value="files" checked /> Files</label>
+                <label><input type="checkbox" value="calendar" /> Calendar</label>
+                <label><input type="checkbox" value="code" /> Code</label>
+              </div>
+            </label>
+          </div>
+          <footer class="modal-footer">
+            <button type="reset" class="btn ghost">Reset</button>
+            <div class="grow"></div>
+            <button value="cancel" class="btn">Cancel</button>
+            <button id="saveAgentBtn" class="btn primary" value="default">Save</button>
+          </footer>
+        </form>
+      </dialog>
+
+      <!-- Command Palette -->
+      <dialog id="commandPalette" class="palette">
+        <div class="palette-inner">
+          <input id="paletteInput" class="input" type="text" placeholder="Type a command…" autofocus />
+          <ul id="paletteResults" class="list palette-list"></ul>
+        </div>
+      </dialog>
+    </div>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>
