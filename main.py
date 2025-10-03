@@ -19,13 +19,7 @@ from ui_overlay import UIOverlay
 
 class WebcamVoiceModulator:
     def __init__(self):
-        # Initialize components
-        self.hand_tracker = HandTracker()
-        self.voice_modulator = VoiceModulator(sample_rate=44100, chunk_size=1024)
-        self.ui_overlay = UIOverlay()
-        
-        # Audio setup
-        self.audio = pyaudio.PyAudio()
+        # Initialize basic settings (don't create objects yet)
         self.sample_rate = 44100
         self.chunk_size = 1024
         
@@ -37,7 +31,12 @@ class WebcamVoiceModulator:
         self.running = False
         self.audio_thread = None
         
-        # Camera
+        # Components (initialized later)
+        self.hand_tracker = None
+        self.voice_modulator = None
+        self.ui_overlay = None
+        self.audio = None
+        self.stream = None
         self.cap = None
         
     def map_hand_to_pitch(self, hand_pos):
@@ -105,24 +104,34 @@ class WebcamVoiceModulator:
     
     def run(self):
         """Main application loop"""
-        # Initialize camera
-        self.cap = cv2.VideoCapture(0)
-        if not self.cap.isOpened():
-            print("Error: Could not open webcam")
-            return
-        
-        # Start audio
-        self.running = True
-        self.start_audio()
-        
-        print("Webcam Voice Modulator Started")
-        print("Controls:")
-        print("  - Left hand (up/down): Control pitch")
-        print("  - Right hand (up/down): Control wet/dry mix")
-        print("  - SPACE: Change voice modulator type")
-        print("  - Q or ESC: Quit")
-        
         try:
+            # Initialize components
+            print("Initializing components...")
+            self.hand_tracker = HandTracker()
+            self.voice_modulator = VoiceModulator(sample_rate=self.sample_rate, chunk_size=self.chunk_size)
+            self.ui_overlay = UIOverlay()
+            self.audio = pyaudio.PyAudio()
+            print("Components initialized successfully")
+            
+            # Initialize camera
+            print("Opening webcam...")
+            self.cap = cv2.VideoCapture(0)
+            if not self.cap.isOpened():
+                print("Error: Could not open webcam")
+                return
+            print("Webcam opened successfully")
+            
+            # Start audio
+            self.running = True
+            self.start_audio()
+            
+            print("\nWebcam Voice Modulator Started")
+            print("Controls:")
+            print("  - Left hand (up/down): Control pitch")
+            print("  - Right hand (up/down): Control wet/dry mix")
+            print("  - SPACE: Change voice modulator type")
+            print("  - Q or ESC: Quit\n")
+            
             while self.running:
                 ret, frame = self.cap.read()
                 if not ret:
@@ -172,6 +181,10 @@ class WebcamVoiceModulator:
                     self.voice_modulator.set_modulator_type(new_modulator)
                     print(f"Switched to {new_modulator} mode")
                     
+        except Exception as e:
+            print(f"Error during execution: {e}")
+            import traceback
+            traceback.print_exc()
         finally:
             self.cleanup()
     
@@ -191,10 +204,12 @@ class WebcamVoiceModulator:
         cv2.destroyAllWindows()
         
         # Release hand tracker
-        self.hand_tracker.release()
+        if self.hand_tracker is not None:
+            self.hand_tracker.release()
         
         # Terminate audio
-        self.audio.terminate()
+        if self.audio is not None:
+            self.audio.terminate()
         
         print("Cleanup complete")
 

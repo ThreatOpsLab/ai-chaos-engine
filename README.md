@@ -92,10 +92,23 @@ python main.py
 
 ## Troubleshooting
 
+### Cursor/IDE Issues
+
+**Application crashes when opening files in Cursor:**
+- This is now fixed! The app only initializes hardware when you explicitly run `python main.py`
+- Files are safe to open and edit in Cursor without the app starting
+- To test if everything is working: `python test_import.py`
+
+**Testing without hardware:**
+- Run `python demo_no_hardware.py` to test components without webcam/audio
+- This is useful for development and testing in virtual environments
+
+### Runtime Issues
+
 **No audio output/input:**
 - Check your system audio settings
 - Ensure microphone permissions are granted
-- Try running with `--no-audio` flag (visual only mode - requires code modification)
+- The app will continue with video-only mode if audio fails
 
 **Hand tracking not working:**
 - Improve lighting conditions
